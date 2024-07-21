@@ -8,6 +8,7 @@
 # ./vfio.sh                List GPU pci ids
 # ./vfio.sh bind           Load vfio drivers
 # ./vfio.sh unbind         Unload vfio drivers
+# ./vfio.sh status         Show driver in use for GPU
 
 gpu=`lspci | grep -ie "vga.*nvidia" | awk '{print $1}'`
 aud=`lspci | grep -ie "audio.*nvidia" | awk '{print $1}'`
@@ -107,6 +108,12 @@ if [ "$1" = "unbind" ]; then
 
 	echo ""
 	echo "Unbinding complete! Check driver: \`lspci -ks `echo $gpu | cut -d'.' -f1`\`"
+	exit 0
+fi
+
+if [ "$1" = "status" ]; then
+	driver=`lspci -ks $gpu | grep "driver in use" | awk '{print $5}'`
+	echo "Loaded driver: $driver"
 	exit 0
 fi
 

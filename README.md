@@ -11,3 +11,4 @@ Quick and dirty script for loading VFIO drivers without the need to reboot or re
     ./vfio.sh                List GPU pci ids
     ./vfio.sh bind           Load vfio drivers
     ./vfio.sh unbind         Unload vfio drivers
+    ./vfio.sh status         Show driver in use for GPU
