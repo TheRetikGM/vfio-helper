@@ -56,6 +56,10 @@ function unload_nvidia {
 	done
 }
 
+function systemctl-exists {
+  [ $(systemctl list-unit-files "${1}*" | wc -l) -gt 3 ]
+}
+
 function load_nvidia {
 	# PCI rescan may load the nouveau module
 	if lsmod | grep -wq nouveau; then
@@ -68,7 +72,7 @@ function load_nvidia {
 	done
 	
 	# Start the nvidia-powerd service if its available
-	if systemctl status nvidia-powerd 2>&1 > /dev/null; then
+	if systemctl-exists nvidia-powerd; then
 		echo "Starting nvidia-powerd service"
 		systemctl start nvidia-powerd.service
 	fi
