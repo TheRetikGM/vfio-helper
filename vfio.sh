@@ -8,7 +8,6 @@
 # ./vfio.sh                List GPU pci ids
 # ./vfio.sh bind           Load vfio drivers
 # ./vfio.sh unbind         Unload vfio drivers
-# ./vfio.sh status         Show driver in use for GPU
 
 gpu=`lspci | grep -ie "vga.*nvidia" | awk '{print $1}'`
 aud=`lspci | grep -ie "audio.*nvidia" | awk '{print $1}'`
@@ -38,16 +37,24 @@ function unbind_vfio {
 	echo 1 > /sys/bus/pci/rescan
 }
 
-function unload_nvidia {
+function handle_nvidia_in_use {
 	if ps aux | grep nvidia-powerd | grep -vq grep; then
 		echo "Stopping nvidia-powerd service"
 		systemctl stop nvidia-powerd.service
 	fi
 
 	# Check if anything else is using the card
-	local pids=`lsof /dev/nvidia* 2> /dev/null | grep -v PID | awk '{print $2}' | uniq | xargs`
-	if [ "$pids" != "" ]; then
-		echo "NVIDIA GPU is in use by: $pids" >&2
+	local processes=`pgrep -a nvidia | awk '{ if (substr($2, 0, 1) != "[") { print $0 } }'`
+	local pids=`echo -n $processes | wc -l`
+	if [ $pids -gt 0 ]; then
+		echo "NVIDIA GPU is in use by: " >&2
+		echo $processes >&2
+		exit 1
+	fi
+}
+
+function unload_nvidia {
+	if ! handle_nvidia_in_use; then
 		exit 1
 	fi
 
@@ -102,7 +109,7 @@ if [ "$1" = "bind" ]; then
 fi
 
 if [ "$1" = "unbind" ]; then
-	if ! unbind_vfio || ! unload_vfio || ! load_nvidia; then
+	if ! handle_nvidia_in_use || ! unbind_vfio || ! unload_vfio || ! load_nvidia; then
 		exit 1
 	fi
 
